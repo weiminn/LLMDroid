@@ -4,7 +4,7 @@
 
 - We applied LLMDroid to three popular open-source Android automated testing tools: **Droidbot**, **Humanoid** (based on Droidbot), and **Fastbot2**. See [Usage](#usage) for details.
 
-- If you want to adapt LLMDroid to other testing tools, refer to the documentation: [`Adapting LLMDroid to other tools `](./documents/Adapting LLMDroid to other tools.md)
+- If you want to adapt LLMDroid to other testing tools, refer to the documentation: [`Adapting LLMDroid to other tools `](./documents/Adapting_LLMDroid_to_Other_Tools.md)
 
 - LLMDroid supports instrumented APKs using **AndroLog** and **Jacoco**. For detailed steps, check: [`Instrumentation Documentation`](./documents/Instrumentation.md).
 
