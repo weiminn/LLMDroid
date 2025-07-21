@@ -35,7 +35,7 @@ namespace fastbotx {
         _startTime = currentStamp();
         _nextStageTime = _startTime + _runTime;
         ////read from json
-        //std::ifstream file("/sdcard/faruzan/config.json");
+        //std::ifstream file("/sdcard/config.json");
         ////Check if the file is opened successfully
         //if (!file.is_open()) {
         //callJavaLogger(MAIN_THREAD, "can't open config.json");

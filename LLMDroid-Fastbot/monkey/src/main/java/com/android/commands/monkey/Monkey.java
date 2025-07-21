@@ -936,7 +936,7 @@ public class Monkey {
 
     private boolean initCodeCoverage() {
         if (mMonitorMetric.equalsIgnoreCase("androlog")) {
-            try (BufferedReader reader = new BufferedReader(new FileReader("/sdcard/faruzan/config.json"))) {
+            try (BufferedReader reader = new BufferedReader(new FileReader("/sdcard/config.json"))) {
                 // 读取整个文件内容为字符串
                 StringBuilder sb = new StringBuilder();
                 String line;
@@ -960,7 +960,7 @@ public class Monkey {
         }
         else if (mMonitorMetric.equalsIgnoreCase("jacoco")) {
             Logger.println("[Jacoco] start initializing jacoco");
-            try (BufferedReader reader = new BufferedReader(new FileReader("/sdcard/faruzan/config.json"))) {
+            try (BufferedReader reader = new BufferedReader(new FileReader("/sdcard/config.json"))) {
                 // 读取整个文件内容为字符串
                 StringBuilder sb = new StringBuilder();
                 String line;
