@@ -29,6 +29,8 @@ The instrumented APKs can be downloaded from the following link.
 
 [Google Drive Share](https://drive.google.com/drive/folders/11-3iLHXhXTQjNG0DheRga256bWq528_e?usp=sharing)
 
+We provide both the instrumented version and the non-instrumented version. Since some APKs have been blocked and are not visible, we have packaged them separately into two compressed archives and encrypted them using the password `securitypride`.
+
 
 ## APK Information
 | App Name                       | Package Name                                   | TAG                           | Total Methods |
