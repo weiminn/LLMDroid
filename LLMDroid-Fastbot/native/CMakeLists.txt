@@ -1,17 +1,21 @@
 # @author Jianqiang Guo, Yuhui Su
-#include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
+include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 cmake_minimum_required(VERSION 3.10)
 project(fastbot_native)
 
-set(nlohmann_json_DIR "$ENV{HOME}/vcpkg/installed/arm64-android/share/nlohmann_json")
+message(STATUS "VCPKG_ROOT = /root/vcpkg")
+
+## set(nlohmann_json_DIR "$ENV{HOME}/vcpkg/installed/arm64-android/share/nlohmann_json")
+set(nlohmann_json_DIR "/root/vcpkg/installed/x86-android/share/nlohmann_json")
 # $ENV{HOME}/vcpkg/installed/arm64-android/share/nlohmann_json
-# $ENV{HOME}/vcpkg/buildtrees/nlohmann-json/x64-linux-rel
+# $ENV{HOME}/vcpkg/buildtrees/nlohmann-json/x86-linux-rel
 #set(CURL_DIR "$ENV{HOME}/vcpkg/buildtrees/curl/arm64-android-rel/generated")
 # set(CURL_LIBRARY "$ENV{HOME}/vcpkg/installed/arm64-android/lib/libcurl.a")
 # set(CURL_INCLUDE_DIR "$ENV{HOME}/vcpkg/installed/arm64-android/include")
 # set(OPENSSL_LIBRARY "$ENV{HOME}/vcpkg/installed/arm64-android/lib/libssl.a")
 # set(OPENSSL_INCLUDE_DIR "${HOME}/vcpkg/installed/arm64-android/incldue")
 
+message(STATUS "nlohmann_json_DIR = ${nlohmann_json_DIR}")
 find_package(nlohmann_json CONFIG REQUIRED)
 #find_package(CURL REQUIRED)
 #find_package(OPENSSL)
@@ -21,19 +25,23 @@ find_package(nlohmann_json CONFIG REQUIRED)
 
 add_library(lib_curl STATIC IMPORTED)
 set_target_properties(lib_curl PROPERTIES IMPORTED_LOCATION
-        ${CMAKE_CURRENT_SOURCE_DIR}/curl/lib/arm64-v8a/libcurl.a)
+##        ${CMAKE_CURRENT_SOURCE_DIR}/curl/lib/arm64-v8a/libcurl.a)
+        /root/vcpkg/installed/x86-android/lib/libcurl.a)
 
 add_library(lib_crypto STATIC IMPORTED)
 set_target_properties(lib_crypto PROPERTIES IMPORTED_LOCATION
-  ${CMAKE_CURRENT_SOURCE_DIR}/curl/lib/arm64-v8a/libcrypto.a)
+##  ${CMAKE_CURRENT_SOURCE_DIR}/curl/lib/arm64-v8a/libcrypto.a)
+  /root/vcpkg/installed/x86-android/lib/libcrypto.a)
 
 add_library(lib_ssl STATIC IMPORTED)
 set_target_properties(lib_ssl PROPERTIES IMPORTED_LOCATION
-  ${CMAKE_CURRENT_SOURCE_DIR}/curl/lib/arm64-v8a/libssl.a)
+##  ${CMAKE_CURRENT_SOURCE_DIR}/curl/lib/arm64-v8a/libssl.a)
+  /root/vcpkg/installed/x86-android/lib/libssl.a)
 
 add_library(lib_z STATIC IMPORTED)
 set_target_properties(lib_z PROPERTIES IMPORTED_LOCATION
-  ${CMAKE_CURRENT_SOURCE_DIR}/curl/lib/arm64-v8a/libz.a)
+##  ${CMAKE_CURRENT_SOURCE_DIR}/curl/lib/arm64-v8a/libz.a)
+  /root/vcpkg/installed/x86-android/lib/libz.a)
 
 set( LIBPATH mac)
 message(STATUS  ${CMAKE_SYSTEM_NAME})

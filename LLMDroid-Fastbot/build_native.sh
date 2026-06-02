@@ -6,7 +6,8 @@ rm -f CMakeCache.txt
 # make
 # rm -r  CMakeFiles/
 
-cmake -DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DCMAKE_BUILD_TYPE=Release
+# cmake -DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DCMAKE_BUILD_TYPE=Release
+cmake -DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86  -DCMAKE_BUILD_TYPE=Release -DANDROID_PLATFORM=android-26  -DVCPKG_ROOT=$VCPKG_ROOT
 make clean
 make -j8
 #rm -r  CMakeFiles/

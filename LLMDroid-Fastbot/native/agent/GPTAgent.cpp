@@ -37,6 +37,7 @@ namespace fastbotx {
             std::string appName = config["AppName"];
             std::string description = config["Description"];
             std::string apiKey = config["ApiKey"];
+            // callJavaLogger(MAIN_THREAD, "Set ApiKey to %s", apiKey.c_str());
             if (config.contains("Model")) {
                 _model_str = config["Model"];
                 callJavaLogger(MAIN_THREAD, "Set model_str to %s", _model_str.c_str());
@@ -89,7 +90,11 @@ namespace fastbotx {
             // need to protect _topValuedMergedState
             std::unique_lock<std::mutex> lock(_mtx); 
             int targetId = payload.from->getId();
-            auto end = _topValuedMergedState->begin() + std::min(_P2 + 1ul, _topValuedMergedState->size());
+            
+            // not compatible with x86
+            // auto end = _topValuedMergedState->begin() + std::min(_P2 + 1ul, _topValuedMergedState->size());
+            auto end = _topValuedMergedState->begin() + std::min(static_cast<size_t>(_P2 + 1), _topValuedMergedState->size());
+
             auto found = std::find_if(_topValuedMergedState->begin(), end,
                                       [targetId](MergedStatePtr& ms){
                                           return targetId == ms->getId();

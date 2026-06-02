@@ -153,7 +153,8 @@ namespace liboai {
 				return false;
 			}
 			
-			std::string openai_root_ = "https://oneapi.xty.app/v1";
+			// std::string openai_root_ = "https://oneapi.xty.app/v1";
+			std::string openai_root_ = "https://api.openai.com/v1";
 			//"https://api.openai.com/v1"
 			//"https://oneapi.xty.app/v1"
 			const std::string azure_root_ = ".openai.azure.com/openai";
