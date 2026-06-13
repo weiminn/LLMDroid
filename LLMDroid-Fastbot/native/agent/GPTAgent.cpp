@@ -3,6 +3,7 @@
 #include <chrono>
 #include <fstream>
 #include <algorithm>
+#include <cctype>
 #include "../thirdpart/json/json.hpp"
 #include <atomic>
 #include <stdexcept>
@@ -46,6 +47,14 @@ namespace fastbotx {
                 _gpt.ChatCompletion->set_base_url(config["BaseUrl"]);
                 callJavaLogger(MAIN_THREAD, "Set base_url to %s", config["BaseUrl"].get<std::string>().c_str());
             }
+            if (config.contains("InputTokenRate")) {
+                _inputTokenRate = config["InputTokenRate"].get<double>();
+                callJavaLogger(MAIN_THREAD, "Set input token rate to %.6e", _inputTokenRate);
+            }
+            if (config.contains("OutputTokenRate")) {
+                _outputTokenRate = config["OutputTokenRate"].get<double>();
+                callJavaLogger(MAIN_THREAD, "Set output token rate to %.6e", _outputTokenRate);
+            }
             if (!appName.empty() && !description.empty()) {
                 _startPrompt = "I'm now testing an app called " + appName + " on Android.\n" + description + "\n";
                 _apiKey = apiKey;
@@ -73,6 +82,57 @@ namespace fastbotx {
             _interactionFile.close();
         }
         return;
+    }
+
+    namespace {
+        std::string toLower(std::string s) {
+            std::transform(s.begin(), s.end(), s.begin(),
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            return s;
+        }
+
+        // Returns USD per token for known models. 0.0 means "unknown".
+        // Rates can be overridden via config.json (InputTokenRate / OutputTokenRate).
+        double getModelTokenRate(const std::string& model, bool input) {
+            const std::string m = toLower(model);
+            static const std::unordered_map<std::string, std::pair<double, double>> rates = {
+                // OpenAI models (per 1M tokens)
+                {"gpt-4o-mini", {0.15 / 1e6, 0.60 / 1e6}},
+                {"gpt-4o", {2.5 / 1e6, 10.0 / 1e6}},
+                {"gpt-4-turbo", {10.0 / 1e6, 30.0 / 1e6}},
+                {"gpt-4", {30.0 / 1e6, 60.0 / 1e6}},
+                // Anthropic models (per 1M tokens)
+                {"claude-3-5-sonnet-20240620", {3.0 / 1e6, 15.0 / 1e6}},
+                {"claude-3-7-sonnet-latest", {3.0 / 1e6, 15.0 / 1e6}},
+                {"claude-3-7-sonnet-20250219", {3.0 / 1e6, 15.0 / 1e6}},
+                {"claude-opus-4-20250514", {15.0 / 1e6, 75.0 / 1e6}},
+                {"claude-sonnet-4-20250514", {3.0 / 1e6, 15.0 / 1e6}},
+                // DeepSeek via OpenRouter (per-token rates from env_vars.py)
+                {"openrouter/deepseek/deepseek-v4-pro", {4.35e-7, 8.7e-7}},
+                {"openrouter/deepseek/deepseek-v4-flash", {9.83e-8, 1.966e-7}},
+                // OpenRouter Anthropic aliases
+                {"openrouter/anthropic/claude-sonnet-4.6", {3.0 / 1e6, 15.0 / 1e6}},
+            };
+
+            auto it = rates.find(m);
+            if (it != rates.end()) {
+                return input ? it->second.first : it->second.second;
+            }
+
+            // Fuzzy fallback for model strings with provider/version prefixes.
+            if (m.find("gpt-4o-mini") != std::string::npos) return input ? 0.15 / 1e6 : 0.60 / 1e6;
+            if (m.find("gpt-4o") != std::string::npos) return input ? 2.5 / 1e6 : 10.0 / 1e6;
+            if (m.find("gpt-4-turbo") != std::string::npos) return input ? 10.0 / 1e6 : 30.0 / 1e6;
+            if (m.find("gpt-4") != std::string::npos) return input ? 30.0 / 1e6 : 60.0 / 1e6;
+            if (m.find("claude-opus-4") != std::string::npos) return input ? 15.0 / 1e6 : 75.0 / 1e6;
+            if (m.find("claude-3-5-sonnet") != std::string::npos) return input ? 3.0 / 1e6 : 15.0 / 1e6;
+            if (m.find("claude-3-7-sonnet") != std::string::npos) return input ? 3.0 / 1e6 : 15.0 / 1e6;
+            if (m.find("claude-sonnet-4") != std::string::npos) return input ? 3.0 / 1e6 : 15.0 / 1e6;
+            if (m.find("deepseek-v4-pro") != std::string::npos) return input ? 4.35e-7 : 8.7e-7;
+            if (m.find("deepseek-v4-flash") != std::string::npos) return input ? 9.83e-8 : 1.966e-7;
+
+            return 0.0;
+        }
     }
 
     bool GPTAgent::init()
@@ -558,13 +618,56 @@ namespace fastbotx {
         double timeCost = (endStamp - beginStamp) / 1000.0;
         nlohmann::json rawJson = rawResponse.raw_json;
 
+        // Extract token usage. Different providers use different field names.
+        int inputTokens = 0;
+        int outputTokens = 0;
+        int thinkingTokens = 0;
+        if (rawJson.contains("usage") && !rawJson["usage"].is_null()) {
+            nlohmann::json usage = rawJson["usage"];
+            inputTokens = getJsonValue<int>(usage, "prompt_tokens", 0);
+            if (inputTokens == 0) {
+                inputTokens = getJsonValue<int>(usage, "input_tokens", 0);
+            }
+            outputTokens = getJsonValue<int>(usage, "completion_tokens", 0);
+            if (outputTokens == 0) {
+                outputTokens = getJsonValue<int>(usage, "output_tokens", 0);
+            }
+            if (usage.contains("completion_tokens_details") && !usage["completion_tokens_details"].is_null()) {
+                thinkingTokens = getJsonValue<int>(usage["completion_tokens_details"], "reasoning_tokens", 0);
+            }
+            if (thinkingTokens == 0 && usage.contains("prompt_tokens_details") && !usage["prompt_tokens_details"].is_null()) {
+                thinkingTokens = getJsonValue<int>(usage["prompt_tokens_details"], "reasoning_tokens", 0);
+            }
+        }
+        else {
+            callJavaLogger(CHILD_THREAD, "[WARNING] LLM response did not contain usage metadata");
+        }
+
+        // Resolve per-token rates: config overrides built-in table.
+        double inputRate = (_inputTokenRate >= 0.0) ? _inputTokenRate : getModelTokenRate(_model_str, true);
+        double outputRate = (_outputTokenRate >= 0.0) ? _outputTokenRate : getModelTokenRate(_model_str, false);
+        double moneyCost = inputTokens * inputRate + outputTokens * outputRate;
+
         using UnderlyingType = typename std::underlying_type<AskModel>::type;
         _interactionFile << std::fixed << std::setprecision(5) <<
                 timeCost << ", " <<
                 _model_str << ", " <<
-                rawJson["usage"]["prompt_tokens"] << ", " <<
-                rawJson["usage"]["completion_tokens"] << ", " <<
-                static_cast<UnderlyingType>(type) << std::endl;
+                inputTokens << ", " <<
+                outputTokens << ", " <<
+                static_cast<UnderlyingType>(type) << ", " <<
+                thinkingTokens << ", " <<
+                std::setprecision(8) << moneyCost << std::endl;
+
+        if (inputRate > 0.0 && outputRate > 0.0) {
+            callJavaLogger(CHILD_THREAD,
+                "[THREAD]Token cost -> input: %d, output: %d, thinking: %d, money: $%.8f (in=$%.3e/out=$%.3e)",
+                inputTokens, outputTokens, thinkingTokens, moneyCost, inputRate, outputRate);
+        }
+        else {
+            callJavaLogger(CHILD_THREAD,
+                "[THREAD]Token cost -> input: %d, output: %d, thinking: %d, money: unknown (unknown model %s)",
+                inputTokens, outputTokens, thinkingTokens, _model_str.c_str());
+        }
 
         callJavaLogger(1, "[THREAD]Get response\n%s\n", response.c_str());
 

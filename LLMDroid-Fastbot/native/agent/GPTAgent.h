@@ -84,6 +84,8 @@ namespace fastbotx {
 
         std::string _startPrompt;
         std::string _apiKey;
+        double _inputTokenRate = -1.0;
+        double _outputTokenRate = -1.0;
         liboai::OpenAI _gpt;
         liboai::Conversation _conversation;
         const int _maxCachedConversation = 0;
